@@ -34,7 +34,9 @@ window.switchTab = function(tabName) {
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     
     document.getElementById('tab-' + tabName).style.display = 'block';
-    event.currentTarget.classList.add('active');
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+    }
     updateCategorySelects();
 };
 
@@ -42,7 +44,7 @@ function initAppData() {
     const sections = ['plans', 'chores', 'notes'];
 
     sections.forEach(sec => {
-        // Слушаем категории
+        // 1. Слушаем категории
         const catQuery = query(collection(db, `${sec}_categories`), orderBy('createdAt', 'asc'));
         onSnapshot(catQuery, (snapshot) => {
             categoriesCache[sec] = [];
@@ -50,12 +52,14 @@ function initAppData() {
                 categoriesCache[sec].push({ id: docSnap.id, ...docSnap.data() });
             });
             updateCategorySelects();
-        });
+        }, (err) => console.error(`Ошибка загрузки категорий (${sec}):`, err));
 
-        // Слушаем задачи
+        // 2. Слушаем задачи
         const taskQuery = query(collection(db, sec), orderBy('createdAt', 'desc'));
         onSnapshot(taskQuery, (snapshot) => {
             const listEl = document.getElementById(sec + 'List');
+            if (!listEl) return;
+            
             listEl.innerHTML = '';
             
             if (snapshot.empty) {
@@ -63,7 +67,6 @@ function initAppData() {
                 return;
             }
 
-            // Сегодняшняя дата без учета времени для корректной проверки просрочки
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
@@ -71,7 +74,6 @@ function initAppData() {
                 const item = docSnap.data();
                 const id = docSnap.id;
                 
-                // Обработка дедлайна
                 let dueDateStr = '';
                 let isOverdue = false;
 
@@ -82,7 +84,6 @@ function initAppData() {
                     const taskDate = new Date(item.dueDate);
                     taskDate.setHours(0, 0, 0, 0);
                     
-                    // Если задача не выполнена и дата меньше сегодняшней
                     if (!item.completed && taskDate < today) {
                         isOverdue = true;
                     }
@@ -104,42 +105,52 @@ function initAppData() {
                 `;
                 listEl.appendChild(li);
             });
-        });
+        }, (err) => console.error(`Ошибка загрузки задач (${sec}):`, err));
     });
 }
 
-// Обновление выпадающего списка категорий
-function updateCategorySelects() {
+// Обновление списка категорий
+function updateCategorySelects(selectedValueToSet = null) {
     const selectEl = document.getElementById(currentSection + 'CategorySelect');
     if (!selectEl) return;
 
-    selectEl.innerHTML = '<option value="Общее">📦 Общее</option>';
+    const previousVal = selectedValueToSet || selectEl.value;
+
+    selectEl.innerHTML = '<option value="📦 Общее">📦 Общее</option>';
     
     categoriesCache[currentSection].forEach(cat => {
+        const catVal = `${cat.emoji || '📌'} ${cat.name}`;
         const opt = document.createElement('option');
-        opt.value = `${cat.emoji || '📌'} ${cat.name}`;
-        opt.textContent = `${cat.emoji || '📌'} ${cat.name}`;
+        opt.value = catVal;
+        opt.textContent = catVal;
         selectEl.appendChild(opt);
     });
 
-    // Опция создания новой категории в самом конце списка
     const addOpt = document.createElement('option');
     addOpt.value = "__ADD_NEW__";
     addOpt.textContent = "➕ Добавить категорию...";
     selectEl.appendChild(addOpt);
+
+    if (previousVal && previousVal !== "__ADD_NEW__") {
+        selectEl.value = previousVal;
+    }
 }
 
-// Обработка выбора в выпадающем списке категорий
-window.handleCategoryChange = function(selectEl) {
+// Выбор категории в списки
+window.handleCategoryChange = async function(selectEl) {
     if (selectEl.value === "__ADD_NEW__") {
-        selectEl.value = "Общее"; // сбрасываем временно
+        selectEl.value = "📦 Общее"; 
         
-        const emoji = prompt('Введите эмодзи для категории (например, 🎬, 🛒, 💡):', '🏠');
+        const emoji = prompt('Введите эмодзи для категории:', '🏠');
         if (emoji === null) return;
         const name = prompt('Введите название новой категории:');
         if (!name || !name.trim()) return;
 
-        createCategory(currentSection, name.trim(), emoji.trim());
+        const newCatName = `${emoji.trim() || '📌'} ${name.trim()}`;
+        await createCategory(currentSection, name.trim(), emoji.trim() || '📌');
+        
+        // Автоматически выставляем новую категорию после добавления
+        updateCategorySelects(newCatName);
     }
 };
 
@@ -152,6 +163,7 @@ async function createCategory(section, name, emoji) {
         });
     } catch (e) {
         console.error("Ошибка создания категории:", e);
+        alert("Не удалось создать категорию: " + e.message);
     }
 }
 
@@ -161,37 +173,54 @@ window.addTask = async function(section) {
     const selectEl = document.getElementById(section + 'CategorySelect');
     const dateEl = document.getElementById(section + 'DateInput');
     
+    if (!inputEl) return;
+
     const text = inputEl.value.trim();
     if (!text) return;
+
+    let selectedCategory = selectEl ? selectEl.value : '📦 Общее';
+    if (selectedCategory === "__ADD_NEW__") {
+        selectedCategory = '📦 Общее';
+    }
 
     try {
         await addDoc(collection(db, section), {
             text: text,
-            category: selectEl.value === "__ADD_NEW__" ? "Общее" : selectEl.value,
-            dueDate: dateEl.value || null, // Сохраняем выбранную дату (YYYY-MM-DD)
+            category: selectedCategory,
+            dueDate: (dateEl && dateEl.value) ? dateEl.value : "",
             completed: false,
             createdAt: serverTimestamp(),
-            authorEmail: auth.currentUser.email,
-            authorName: auth.currentUser.displayName || auth.currentUser.email.split('@')[0]
+            authorEmail: auth.currentUser ? auth.currentUser.email : "",
+            authorName: auth.currentUser ? (auth.currentUser.displayName || auth.currentUser.email.split('@')[0]) : "Пользователь"
         });
 
         inputEl.value = '';
-        dateEl.value = '';
+        if (dateEl) dateEl.value = '';
     } catch (e) {
-        console.error("Ошибка добавления таски: ", e);
+        console.error("Ошибка добавления задачи: ", e);
+        alert("Ошибка сохранения задачи: " + e.message);
     }
 };
 
 window.toggleTask = async function(section, id, status) {
-    await updateDoc(doc(db, section, id), { completed: status });
+    try {
+        await updateDoc(doc(db, section, id), { completed: status });
+    } catch (e) {
+        console.error("Ошибка обновления задачи:", e);
+    }
 };
 
 window.deleteTask = async function(section, id) {
-    await deleteDoc(doc(db, section, id));
+    try {
+        await deleteDoc(doc(db, section, id));
+    } catch (e) {
+        console.error("Ошибка удаления задачи:", e);
+    }
 };
 
 function escapeHtml(str) {
-    return str.replace(/[&<>'"]/g, 
+    if (!str) return '';
+    return String(str).replace(/[&<>'"]/g, 
         tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
     );
 }
