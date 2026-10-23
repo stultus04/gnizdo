@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gnizdo</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,170 +11,211 @@
     <link rel="manifest" href="manifest.json">
     
     <style>
+        :root {
+            --bg-color: #f2f2f7;
+            --card-bg: #ffffff;
+            --text-main: #1c1c1e;
+            --text-secondary: #8e8e93;
+            --accent: #007aff;
+            --border-color: #e5e5ea;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #f4f4f9;
-            color: #333;
-            text-align: center;
-            padding-top: 40px;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
             margin: 0;
-            padding-left: 20px;
-            padding-right: 20px;
+            padding: 0;
         }
-        input, button {
-            padding: 12px;
+
+        #login-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #app-content {
+            display: none;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px 16px 100px 16px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-top: 10px;
+        }
+
+        h1 { font-size: 24px; font-weight: 700; margin: 0; }
+
+        .user-avatar {
+            font-size: 14px;
+            color: var(--text-secondary);
+            background: var(--card-bg);
+            padding: 6px 12px;
+            border-radius: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .tabs-nav {
+            display: flex;
+            background: #e3e3e8;
+            padding: 3px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            background: var(--card-bg);
+            color: var(--text-main);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 16px;
             font-size: 16px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            margin-top: 10px;
-            width: 100%;
-            max-width: 300px;
-            box-sizing: border-box;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            outline: none;
+            color: var(--text-main);
         }
-        button {
-            background-color: #007aff;
+
+        button.primary-btn {
+            background-color: var(--accent);
             color: white;
             border: none;
+            padding: 0 16px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
             cursor: pointer;
-            font-weight: bold;
         }
-        button.google-btn {
-            background-color: #db4437;
+
+        .items-list { list-style: none; padding: 0; margin: 0; }
+
+        .item-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
         }
-        #app-content {
-            display: none; /* Скрыто до авторизации */
-        }
-        #login-screen {
-            margin-top: 60px;
-        }
-        #cloud-data {
-            margin-top: 20px;
-            font-size: 18px;
-            font-weight: bold;
-            color: #007aff;
+
+        .item-text { font-size: 16px; flex: 1; margin-left: 10px; word-break: break-word; }
+        .item-text.completed { text-decoration: line-through; color: var(--text-secondary); }
+
+        .delete-btn { background: none; border: none; color: #ff3b30; font-size: 18px; cursor: pointer; padding: 4px 8px; }
+
+        .google-btn {
+            background-color: #ffffff;
+            color: #1c1c1e;
+            border: 1px solid var(--border-color);
+            padding: 12px 24px;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
     </style>
 </head>
 <body>
 
-    <h1>Gnizdo 🪺</h1>
-
-    <!-- Экран входа (если пользователь не авторизован) -->
+    <!-- Экран входа -->
     <div id="login-screen">
-        <p>Для доступа к уютному пространству войдите через Google</p>
+        <div style="font-size: 64px; margin-bottom: 10px;">🪺</div>
+        <h1>Gnizdo</h1>
+        <p style="color: var(--text-secondary); margin-bottom: 24px;">Уютное пространство для двоих</p>
         <button id="loginBtn" class="google-btn">Войти через Google</button>
     </div>
 
-    <!-- Основной интерфейс приложения (доступен после входа) -->
+    <!-- Основной интерфейс -->
     <div id="app-content">
-        <p>Общее пространство для двоих</p>
-        <input type="text" id="noteInput" placeholder="Напишите общую заметку...">
-        <br>
-        <button id="saveBtn">Сохранить в облако</button>
-        
-        <div id="cloud-data">Загрузка данных из облака...</div>
-        <br>
-        <button id="logoutBtn" style="background-color: #666; margin-top: 40px;">Выйти</button>
+        <header>
+            <h1>Gnizdo 🪺</h1>
+            <div id="userEmail" class="user-avatar">Загрузка...</div>
+        </header>
+
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchTab('plans')">Планы</button>
+            <button class="tab-btn" onclick="switchTab('chores')">Дела</button>
+            <button class="tab-btn" onclick="switchTab('notes')">Заметки</button>
+        </div>
+
+        <!-- Вкладка: Планы -->
+        <div id="tab-plans" class="tab-content" style="display: block;">
+            <div class="card">
+                <div class="input-group">
+                    <input type="text" id="planInput" placeholder="Новый план...">
+                    <button class="primary-btn" onclick="addItem('plans')">+</button>
+                </div>
+                <ul id="plansList" class="items-list"></ul>
+            </div>
+        </div>
+
+        <!-- Вкладка: Дела -->
+        <div id="tab-chores" class="tab-content" style="display: none;">
+            <div class="card">
+                <div class="input-group">
+                    <input type="text" id="choreInput" placeholder="Дело по дому...">
+                    <button class="primary-btn" onclick="addItem('chores')">+</button>
+                </div>
+                <ul id="choresList" class="items-list"></ul>
+            </div>
+        </div>
+
+        <!-- Вкладка: Заметки -->
+        <div id="tab-notes" class="tab-content" style="display: none;">
+            <div class="card">
+                <div class="input-group">
+                    <input type="text" id="noteInput" placeholder="Быстрая заметка...">
+                    <button class="primary-btn" onclick="addItem('notes')">+</button>
+                </div>
+                <ul id="notesList" class="items-list"></ul>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <button id="logoutBtn" style="background: none; border: none; color: #ff3b30; font-size: 14px; cursor: pointer;">Выйти из аккаунта</button>
+        </div>
     </div>
 
-    <!-- Подключаем Firebase через модули -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        // Вставьте сюда ваши ключи из панели Firebase:
-        const firebaseConfig = {
-  apiKey: "AIzaSyCqQpi4D-A9JbmoJaWeKrkHM8q_SY9NfH0",
-  authDomain: "gnizdo-db.firebaseapp.com",
-  projectId: "gnizdo-db",
-  storageBucket: "gnizdo-db.firebasestorage.app",
-  messagingSenderId: "595648318799",
-  appId: "1:595648318799:web:4b88cfbaff2471d5af493a"
-};
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const provider = new GoogleAuthProvider();
-
-        const loginScreen = document.getElementById('login-screen');
-        const appContent = document.getElementById('app-content');
-        const loginBtn = document.getElementById('loginBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const saveBtn = document.getElementById('saveBtn');
-        const input = document.getElementById('noteInput');
-        const display = document.getElementById('cloud-data');
-
-        let unsubscribe = null;
-
-        // 1. Отслеживание состояния авторизации
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // Пользователь вошел — показываем приложение
-                loginScreen.style.display = 'none';
-                appContent.style.display = 'block';
-                initApp();
-            } else {
-                // Пользователь не вошел — показываем кнопку входа
-                loginScreen.style.display = 'block';
-                appContent.style.display = 'none';
-                if (unsubscribe) unsubscribe(); // отключаем слушатель базы при выходе
-            }
-        });
-
-        // 2. Кнопка входа через Google
-        loginBtn.addEventListener('click', () => {
-            signInWithPopup(auth, provider).catch((error) => {
-                console.error("Ошибка входа:", error);
-                alert("Не удалось войти: " + error.message);
-            });
-        });
-
-        // 3. Кнопка выхода
-        logoutBtn.addEventListener('click', () => {
-            signOut(auth);
-        });
-
-        // 4. Логика работы с базой данных (вызывается после успешного входа)
-        function initApp() {
-            const noteRef = doc(db, "notes", "shared_note");
-
-            // Слушаем изменения в реальном времени
-            unsubscribe = onSnapshot(noteRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    display.textContent = `В облаке: ${docSnap.data().text || ""}`;
-                } else {
-                    display.textContent = "Пока нет записей";
-                }
-            }, (error) => {
-                console.error("Ошибка чтения БД:", error);
-            });
-
-            // Сохранение данных
-            saveBtn.onclick = async () => {
-                try {
-                    await setDoc(noteRef, {
-                        text: input.value,
-                        updatedBy: auth.currentUser.email,
-                        updatedAt: new Date()
-                    });
-                    alert('Сохранено в защищенное облако!');
-                } catch (e) {
-                    console.error("Ошибка сохранения: ", e);
-                    alert('Ошибка при сохранении');
-                }
-            };
-        }
-
-        // Регистрация Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(() => console.log('Service Worker зарегистрирован!'))
-                    .catch(err => console.log('Ошибка SW:', err));
-            });
-        }
-    </script>
+    <!-- Подключаем логику как модуль -->
+    <script type="module" src="app.js"></script>
 </body>
 </html>
