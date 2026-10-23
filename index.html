@@ -19,6 +19,7 @@
             --accent: #007aff;
             --border-color: #e5e5ea;
             --danger: #ff3b30;
+            --success: #34c759;
         }
 
         body {
@@ -27,6 +28,11 @@
             color: var(--text-main);
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+
+        *, *:before, *:after {
+            box-sizing: inherit;
         }
 
         #login-screen {
@@ -43,21 +49,21 @@
             display: none;
             max-width: 600px;
             margin: 0 auto;
-            padding: 20px 16px 100px 16px;
+            padding: 16px 12px 100px 12px;
         }
 
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             padding-top: 10px;
         }
 
-        h1 { font-size: 24px; font-weight: 700; margin: 0; }
+        h1 { font-size: 22px; font-weight: 700; margin: 0; }
 
         .user-avatar {
-            font-size: 14px;
+            font-size: 13px;
             color: var(--text-secondary);
             background: var(--card-bg);
             padding: 6px 12px;
@@ -65,24 +71,30 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
+        /* Исправление вкладок, чтобы текст не уезжал */
         .tabs-nav {
             display: flex;
             background: #e3e3e8;
             padding: 3px;
             border-radius: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
+            gap: 2px;
         }
 
         .tab-btn {
             flex: 1;
-            padding: 10px;
+            padding: 10px 4px;
             border: none;
             background: transparent;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             color: var(--text-secondary);
             border-radius: 10px;
             cursor: pointer;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .tab-btn.active {
@@ -99,43 +111,21 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
 
-        .input-form {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+        .action-bar {
             margin-bottom: 16px;
-        }
-
-        .input-row {
-            display: flex;
-            gap: 8px;
-        }
-
-        input[type="text"], input[type="date"], select {
-            flex: 1;
-            padding: 12px 14px;
-            font-size: 15px;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            background: var(--bg-color);
-            outline: none;
-            color: var(--text-main);
-            box-sizing: border-box;
-        }
-
-        select, input[type="date"] {
-            background-color: var(--card-bg);
         }
 
         button.primary-btn {
             background-color: var(--accent);
             color: white;
             border: none;
-            padding: 0 18px;
-            border-radius: 12px;
+            width: 100%;
+            padding: 14px;
+            border-radius: 14px;
             font-weight: 600;
-            font-size: 18px;
+            font-size: 16px;
             cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,122,255,0.2);
         }
 
         .items-list { list-style: none; padding: 0; margin: 0; }
@@ -151,7 +141,6 @@
         .item-row:last-child { border-bottom: none; }
 
         .item-text { font-size: 16px; word-break: break-word; font-weight: 500; }
-        .item-text.completed { text-decoration: line-through; color: var(--text-secondary); }
 
         .item-meta {
             font-size: 12px;
@@ -170,7 +159,6 @@
             font-weight: 500;
         }
 
-        /* Стиль для просроченной даты */
         .overdue-date {
             color: var(--danger);
             font-weight: 700;
@@ -179,7 +167,130 @@
             border-radius: 6px;
         }
 
+        .cycle-badge {
+            color: #007aff;
+            background: #e5f1ff;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+
         .delete-btn { background: none; border: none; color: var(--danger); font-size: 18px; cursor: pointer; padding: 0 4px; }
+
+        /* Секция выполненных задач */
+        .completed-section {
+            margin-top: 20px;
+            border-top: 1px dashed var(--border-color);
+            padding-top: 12px;
+        }
+
+        .completed-toggle {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .completed-list {
+            list-style: none;
+            padding: 0;
+            margin: 8px 0 0 0;
+            display: none;
+        }
+
+        .completed-list.open {
+            display: block;
+        }
+
+        .completed-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-decoration: line-through;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        /* Модальное окно */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 600px;
+            border-radius: 24px 24px 0 0;
+            padding: 24px 20px 40px 20px;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .modal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .modal-form input, .modal-form select {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            outline: none;
+            color: var(--text-main);
+        }
+
+        .modal-form select, .modal-form input[type="date"] {
+            background-color: var(--card-bg);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .secondary-btn {
+            background: #e3e3e8;
+            border: none;
+            color: var(--text-main);
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            flex: 1;
+        }
 
         .google-btn {
             background-color: #ffffff;
@@ -211,57 +322,54 @@
 
         <div class="tabs-nav">
             <button class="tab-btn active" onclick="switchTab('plans')">Планы</button>
-            <button class="tab-btn" onclick="switchTab('chores')">Деلا</button>
+            <button class="tab-btn" onclick="switchTab('chores')">Домашние дела</button>
             <button class="tab-btn" onclick="switchTab('notes')">Заметки</button>
         </div>
 
-        <!-- Планы -->
-        <div id="tab-plans" class="tab-content" style="display: block;">
+        <!-- Контент вкладок -->
+        <div id="tab-content-area">
             <div class="card">
-                <div class="input-form">
-                    <input type="text" id="plansInput" placeholder="Новый план...">
-                    <div class="input-row">
-                        <select id="plansCategorySelect" onchange="handleCategoryChange(this)"></select>
-                        <input type="date" id="plansDateInput">
-                        <button class="primary-btn" onclick="addTask('plans')">+</button>
-                    </div>
+                <div class="action-bar">
+                    <button class="primary-btn" onclick="openTaskModal()">+ Задание</button>
                 </div>
-                <ul id="plansList" class="items-list"></ul>
-            </div>
-        </div>
+                
+                <!-- Активные задачи -->
+                <ul id="activeTasksList" class="items-list"></ul>
 
-        <!-- Дела -->
-        <div id="tab-chores" class="tab-content" style="display: none;">
-            <div class="card">
-                <div class="input-form">
-                    <input type="text" id="choresInput" placeholder="Дело по дому...">
-                    <div class="input-row">
-                        <select id="choresCategorySelect" onchange="handleCategoryChange(this)"></select>
-                        <input type="date" id="choresDateInput">
-                        <button class="primary-btn" onclick="addTask('chores')">+</button>
-                    </div>
+                <!-- Выполненные задачи -->
+                <div class="completed-section">
+                    <button class="completed-toggle" onclick="toggleCompletedSection()">
+                        ▼ Выполненные (<span id="completedCount">0</span>)
+                    </button>
+                    <ul id="completedTasksList" class="completed-list"></ul>
                 </div>
-                <ul id="choresList" class="items-list"></ul>
-            </div>
-        </div>
-
-        <!-- Заметки -->
-        <div id="tab-notes" class="tab-content" style="display: none;">
-            <div class="card">
-                <div class="input-form">
-                    <input type="text" id="notesInput" placeholder="Быстрая заметка...">
-                    <div class="input-row">
-                        <select id="notesCategorySelect" onchange="handleCategoryChange(this)"></select>
-                        <input type="date" id="notesDateInput">
-                        <button class="primary-btn" onclick="addTask('notes')">+</button>
-                    </div>
-                </div>
-                <ul id="notesList" class="items-list"></ul>
             </div>
         </div>
 
         <div style="text-align: center; margin-top: 30px;">
-            <button id="logoutBtn" style="background: none; border: none; color: #ff3b30; font-size: 14px; cursor: pointer;">Выйти из аккаунта</button>
+            <button id="logoutBtn" style="background: none; border: none; color: var(--danger); font-size: 14px; cursor: pointer;">Выйти из аккаунта</button>
+        </div>
+    </div>
+
+    <!-- Модальное окно создания задачи -->
+    <div id="taskModal" class="modal-overlay" onclick="handleModalOutsideClick(event)">
+        <div class="modal-content">
+            <div class="modal-title">Новое задание 📝</div>
+            <div class="modal-form">
+                <input type="text" id="modalTaskInput" placeholder="Что нужно сделать?">
+                <select id="modalCategorySelect" onchange="handleModalCategoryChange(this)"></select>
+                <input type="date" id="modalDateInput">
+                <select id="modalRecurrenceSelect">
+                    <option value="none">🔄 Без повтора</option>
+                    <option value="daily">🔄 Каждый день</option>
+                    <option value="weekly">🔄 Каждую неделю</option>
+                    <option value="monthly">🔄 Каждый месяц</option>
+                </select>
+                <div class="modal-buttons">
+                    <button class="secondary-btn" onclick="closeTaskModal()">Отмена</button>
+                    <button class="primary-btn" onclick="saveTaskFromModal()" style="flex: 1;">Создать</button>
+                </div>
+            </div>
         </div>
     </div>
 
