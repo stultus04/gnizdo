@@ -1,4 +1,4 @@
-import { auth, db, googleProvider, signInWithPopup, signOut, onAuthStateChanged, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot, serverTimestamp, query, orderBy } from "./firebase-config.js";
+import { auth, db, googleProvider, signInWithPopup, signOut, onAuthStateChanged, collection, addDoc, deleteDoc, doc, updateDoc, getDoc, onSnapshot, serverTimestamp, query, orderBy } from "./firebase-config.js";
 
 const loginScreen = document.getElementById('login-screen');
 const appContent = document.getElementById('app-content');
@@ -31,7 +31,9 @@ logoutBtn.addEventListener('click', () => signOut(auth));
 window.switchTab = function(tabName) {
     currentSection = tabName;
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    event.currentTarget.classList.add('active');
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+    }
     updateCategorySelects();
     initAppData();
 };
@@ -140,6 +142,7 @@ window.closeTaskModal = function() {
     document.getElementById('taskModal').style.display = 'none';
     document.getElementById('modalTaskInput').value = '';
     document.getElementById('modalDateInput').value = '';
+    document.getElementById('modalRecurrenceSelect').value = 'none';
 };
 
 window.handleModalOutsideClick = function(event) {
@@ -148,7 +151,7 @@ window.handleModalOutsideClick = function(event) {
     }
 };
 
-// Обновление селектора в модалке
+// Обновление селектора категорий в модальном окне
 function updateCategorySelects() {
     const selectEl = document.getElementById('modalCategorySelect');
     if (!selectEl) return;
@@ -156,7 +159,7 @@ function updateCategorySelects() {
     selectEl.innerHTML = '<option value="📦 Общее">📦 Общее</option>';
     
     categoriesCache[currentSection].forEach(cat => {
-        const catVal = `${cat.emoji || '📌'} ${cat.name}`;
+        const catVal = cat.name;
         const opt = document.createElement('option');
         opt.value = catVal;
         opt.textContent = catVal;
@@ -169,27 +172,25 @@ function updateCategorySelects() {
     selectEl.appendChild(addOpt);
 }
 
+// Создание новой категории с одной строкой (без эмодзи-инпута)
 window.handleModalCategoryChange = async function(selectEl) {
     if (selectEl.value === "__ADD_NEW__") {
         selectEl.value = "📦 Общее"; 
         
-        const emoji = prompt('Введите эмодзи для категории:', '🏠');
-        if (emoji === null) return;
-        const name = prompt('Введите название новой категории:');
+        const name = prompt('Введите название категории (можно с эмодзи, например: 🪴 Цветы):');
         if (!name || !name.trim()) return;
 
-        const newCatName = `${emoji.trim() || '📌'} ${name.trim()}`;
-        await createCategory(currentSection, name.trim(), emoji.trim() || '📌');
+        const newCatName = name.trim();
+        await createCategory(currentSection, newCatName);
         updateCategorySelects();
         selectEl.value = newCatName;
     }
 };
 
-async function createCategory(section, name, emoji) {
+async function createCategory(section, name) {
     try {
         await addDoc(collection(db, `${section}_categories`), {
             name: name,
-            emoji: emoji,
             createdAt: serverTimestamp()
         });
     } catch (e) {
@@ -197,7 +198,7 @@ async function createCategory(section, name, emoji) {
     }
 }
 
-// Сохранение задачи из модального окна
+// Сохранение задачи из модалки
 window.saveTaskFromModal = async function() {
     const inputEl = document.getElementById('modalTaskInput');
     const selectEl = document.getElementById('modalCategorySelect');
@@ -226,36 +227,58 @@ window.saveTaskFromModal = async function() {
     }
 };
 
-// Завершение задачи с учетом цикличности (TickTick-стиль)
+// Выполнение задачи + авто-создание следующей цикличной
+// Выполнение задачи + строго последовательное авто-создание следующей цикличной
 window.completeTaskWithRecurrence = async function(section, id) {
     try {
-        // Получаем документ задачи, чтобы проверить цикличность
-        const taskDocRef = doc(db, section, id);
-        
-        // Сначала помечаем текущую выполненной (она уйдет в архив)
-        await updateDoc(taskDocRef, { completed: true });
+        const taskRef = doc(db, section, id);
+        const taskSnap = await getDoc(taskRef);
 
-        // Если у задачи настроен повтор, автоматически создаем следующую
-        // (Для этого нам нужно быстро считать её данные через onSnapshot или получить локально, но для простоты передадим структуру или создадим новую по правилу)
-        // Сделаем проще: прочитаем данные через разовый запрос или сохраним в объекте. 
-        // Здесь воспользуемся встроенной логикой создания следующей даты:
+        if (!taskSnap.exists()) return;
+        const taskData = taskSnap.data();
+
+        // 1. Сначала СТРОГО дожидаемся, пока текущая задача обновит статус и уйдет в архив
+        await updateDoc(taskRef, { completed: true });
+
+        // 2. И только ПОСЛЕ успешного архивирования создаем следующую цикличную задачу
+        if (taskData.recurrence && taskData.recurrence !== 'none') {
+            let nextDueDate = "";
+
+            if (taskData.dueDate) {
+                const baseDate = new Date(taskData.dueDate);
+                
+                if (taskData.recurrence === 'daily') {
+                    baseDate.setDate(baseDate.getDate() + 1);
+                } else if (taskData.recurrence === 'weekly') {
+                    baseDate.setDate(baseDate.getDate() + 7);
+                } else if (taskData.recurrence === 'monthly') {
+                    baseDate.setMonth(baseDate.getMonth() + 1);
+                }
+
+                // Форматируем обратно в YYYY-MM-DD
+                const yyyy = baseDate.getFullYear();
+                const mm = String(baseDate.getMonth() + 1).padStart(2, '0');
+                const dd = String(baseDate.getDate()).padStart(2, '0');
+                nextDueDate = `${yyyy}-${mm}-${dd}`;
+            }
+
+            // Создаем новую задачу после архивирования старой
+            await addDoc(collection(db, section), {
+                text: taskData.text,
+                category: taskData.category || "📦 Общее",
+                dueDate: nextDueDate,
+                recurrence: taskData.recurrence,
+                completed: false,
+                createdAt: serverTimestamp(),
+                authorEmail: auth.currentUser ? auth.currentUser.email : "",
+                authorName: auth.currentUser ? (auth.currentUser.displayName || auth.currentUser.email.split('@')[0]) : "Пользователь"
+            });
+        }
     } catch (e) {
-        console.error("Ошибка обновления задачи:", e);
+        console.error("Ошибка при закрытии и пересоздании задачи:", e);
     }
 };
 
-// Улучшенный обработчик выполнения с генерацией следующего периода
-window.completeTaskWithRecurrence = async function(section, id) {
-    // Найдем задачу в текущем списке по id или обновим её
-    // Чтобы реализовать TickTick-логику:
-    const taskRef = doc(db, section, id);
-    
-    // Получим задачу (можно через транзакцию или просто обновить completed: true и сгенерировать копию, если есть recurrence)
-    // Воспользуемся стандартным паттерном:
-    await updateDoc(taskRef, { completed: true });
-};
-
-// Функция архива выполненных
 window.toggleCompletedSection = function() {
     const list = document.getElementById('completedTasksList');
     list.classList.toggle('open');
