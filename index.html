@@ -316,7 +316,7 @@
 
     <div id="app-content">
         <header>
-            <h1>Gnizdo 🪺</h1>
+            <h1>Gnizdo</h1>
             <div id="userEmail" class="user-avatar">Загрузка...</div>
         </header>
 
@@ -359,6 +359,12 @@
                 <input type="text" id="modalTaskInput" placeholder="Что нужно сделать?">
                 <select id="modalCategorySelect" onchange="handleModalCategoryChange(this)"></select>
                 <input type="date" id="modalDateInput">
+                <select id="modalAssigneeSelect">
+    <option value="none">👤 Ответственный: Никто</option>
+    <option value="maxim">👤 Ответственный: Максим</option>
+    <option value="katya">👤 Ответственный: Катя</option>
+    <option value="both">👥 Ответственный: Оба</option>
+</select>
                 <select id="modalRecurrenceSelect">
                     <option value="none">🔄 Без повтора</option>
                     <option value="daily">🔄 Каждый день</option>

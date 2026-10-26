@@ -88,6 +88,12 @@ function initAppData() {
                 }
             }
 
+            // Метка ответственного
+            let assigneeLabel = '';
+            if (item.assignee === 'maxim') assigneeLabel = '👤 Максим';
+            else if (item.assignee === 'katya') assigneeLabel = '👤 Катя';
+            else if (item.assignee === 'both') assigneeLabel = '👥 Оба';
+
             // Метка цикличности
             let recurrenceText = '';
             if (item.recurrence === 'daily') recurrenceText = '🔄 Ежедневно';
@@ -114,6 +120,7 @@ function initAppData() {
                         <div class="item-meta">
                             <span class="category-badge">${escapeHtml(item.category || '📦 Общее')}</span> • 
                             <span>${escapeHtml(item.authorName || 'Кто-то')}</span>
+                            ${assigneeLabel ? ` • <span class="category-badge">${assigneeLabel}</span>` : ''}
                             ${dueDateStr ? ` • <span class="${isOverdue ? 'overdue-date' : ''}">📅 ${dueDateStr}</span>` : ''}
                             ${recurrenceText ? ` • <span class="cycle-badge">${recurrenceText}</span>` : ''}
                         </div>
@@ -143,6 +150,7 @@ window.closeTaskModal = function() {
     document.getElementById('modalTaskInput').value = '';
     document.getElementById('modalDateInput').value = '';
     document.getElementById('modalRecurrenceSelect').value = 'none';
+    document.getElementById('modalAssigneeSelect').value = 'none';
 };
 
 window.handleModalOutsideClick = function(event) {
@@ -151,7 +159,6 @@ window.handleModalOutsideClick = function(event) {
     }
 };
 
-// Обновление селектора категорий в модальном окне
 function updateCategorySelects() {
     const selectEl = document.getElementById('modalCategorySelect');
     if (!selectEl) return;
@@ -172,7 +179,6 @@ function updateCategorySelects() {
     selectEl.appendChild(addOpt);
 }
 
-// Создание новой категории с одной строкой (без эмодзи-инпута)
 window.handleModalCategoryChange = async function(selectEl) {
     if (selectEl.value === "__ADD_NEW__") {
         selectEl.value = "📦 Общее"; 
@@ -198,12 +204,13 @@ async function createCategory(section, name) {
     }
 }
 
-// Сохранение задачи из модалки
+// Сохранение задачи из модалки с учетом ответственного
 window.saveTaskFromModal = async function() {
     const inputEl = document.getElementById('modalTaskInput');
     const selectEl = document.getElementById('modalCategorySelect');
     const dateEl = document.getElementById('modalDateInput');
     const recurrenceEl = document.getElementById('modalRecurrenceSelect');
+    const assigneeEl = document.getElementById('modalAssigneeSelect');
     
     const text = inputEl.value.trim();
     if (!text) return;
@@ -214,6 +221,7 @@ window.saveTaskFromModal = async function() {
             category: selectEl.value === "__ADD_NEW__" ? "📦 Общее" : selectEl.value,
             dueDate: dateEl.value || "",
             recurrence: recurrenceEl.value,
+            assignee: assigneeEl ? assigneeEl.value : "none",
             completed: false,
             createdAt: serverTimestamp(),
             authorEmail: auth.currentUser ? auth.currentUser.email : "",
@@ -227,8 +235,7 @@ window.saveTaskFromModal = async function() {
     }
 };
 
-// Выполнение задачи + авто-создание следующей цикличной
-// Выполнение задачи + строго последовательное авто-создание следующей цикличной
+// Выполнение задачи + авто-создание следующей цикличной с сохранением ответственного
 window.completeTaskWithRecurrence = async function(section, id) {
     try {
         const taskRef = doc(db, section, id);
@@ -237,10 +244,8 @@ window.completeTaskWithRecurrence = async function(section, id) {
         if (!taskSnap.exists()) return;
         const taskData = taskSnap.data();
 
-        // 1. Сначала СТРОГО дожидаемся, пока текущая задача обновит статус и уйдет в архив
         await updateDoc(taskRef, { completed: true });
 
-        // 2. И только ПОСЛЕ успешного архивирования создаем следующую цикличную задачу
         if (taskData.recurrence && taskData.recurrence !== 'none') {
             let nextDueDate = "";
 
@@ -255,19 +260,18 @@ window.completeTaskWithRecurrence = async function(section, id) {
                     baseDate.setMonth(baseDate.getMonth() + 1);
                 }
 
-                // Форматируем обратно в YYYY-MM-DD
                 const yyyy = baseDate.getFullYear();
                 const mm = String(baseDate.getMonth() + 1).padStart(2, '0');
                 const dd = String(baseDate.getDate()).padStart(2, '0');
                 nextDueDate = `${yyyy}-${mm}-${dd}`;
             }
 
-            // Создаем новую задачу после архивирования старой
             await addDoc(collection(db, section), {
                 text: taskData.text,
                 category: taskData.category || "📦 Общее",
                 dueDate: nextDueDate,
                 recurrence: taskData.recurrence,
+                assignee: taskData.assignee || "none",
                 completed: false,
                 createdAt: serverTimestamp(),
                 authorEmail: auth.currentUser ? auth.currentUser.email : "",
