@@ -28,12 +28,22 @@ loginBtn.addEventListener('click', () => {
 logoutBtn.addEventListener('click', () => signOut(auth));
 
 // Переключение вкладок
-window.switchTab = function(tabName) {
+window.switchTab = function(tabName, clickedButton) {
     currentSection = tabName;
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    if (event && event.currentTarget) {
-        event.currentTarget.classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(el => {
+        el.classList.remove('active', 'tab-drop');
+    });
+
+    const activeButton = clickedButton || document.querySelector(`.tab-btn[onclick*="${tabName}"]`);
+    if (activeButton) {
+        activeButton.classList.add('active');
+        void activeButton.offsetWidth;
+        activeButton.classList.add('tab-drop');
+        activeButton.addEventListener('animationend', () => {
+            activeButton.classList.remove('tab-drop');
+        }, { once: true });
     }
+
     updateCategorySelects();
     initAppData();
 };
