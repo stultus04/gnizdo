@@ -48,6 +48,37 @@ window.switchTab = function(tabName, clickedButton) {
     initAppData();
 };
 
+const tabSwipeContent = document.getElementById('tab-content-area');
+const tabNames = ['plans', 'chores', 'notes'];
+let swipeStartX = 0;
+let swipeStartY = 0;
+
+if (tabSwipeContent) {
+    tabSwipeContent.addEventListener('touchstart', (event) => {
+        const touch = event.changedTouches[0];
+        swipeStartX = touch.clientX;
+        swipeStartY = touch.clientY;
+    }, { passive: true });
+
+    tabSwipeContent.addEventListener('touchend', (event) => {
+        const touch = event.changedTouches[0];
+        const deltaX = touch.clientX - swipeStartX;
+        const deltaY = touch.clientY - swipeStartY;
+
+        if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return;
+
+        const currentIndex = tabNames.indexOf(currentSection);
+        const nextIndex = deltaX < 0
+            ? Math.min(currentIndex + 1, tabNames.length - 1)
+            : Math.max(currentIndex - 1, 0);
+
+        if (nextIndex !== currentIndex) {
+            const nextButton = document.querySelectorAll('.tab-btn')[nextIndex];
+            switchTab(tabNames[nextIndex], nextButton);
+        }
+    }, { passive: true });
+}
+
 function initAppData() {
     const sec = currentSection;
 
