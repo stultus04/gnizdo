@@ -6,8 +6,11 @@ const loginBtn = document.getElementById('loginBtn');
 const logoutBtn = document.getElementById('logoutBtn');
 const userEmailDiv = document.getElementById('userEmail');
 
+const savedTheme = localStorage.getItem('gnizdo-theme') === 'dark' ? 'dark' : 'light';
+document.documentElement.dataset.theme = savedTheme;
+
 let currentSection = 'plans';
-let categoriesCache = { plans: [], chores: [], notes: [] };
+let categoriesCache = [];
 let observedCategories = { plans: [], chores: [], notes: [] };
 let categoryFilterBySection = { plans: 'all', chores: 'all', notes: 'all' };
 
@@ -17,6 +20,7 @@ onAuthStateChanged(auth, (user) => {
         appContent.style.display = 'block';
         userEmailDiv.textContent = user.displayName ? user.displayName.split(' ')[0] : user.email;
         initAppData();
+        migrateLegacyCategories();
     } else {
         loginScreen.style.display = 'flex';
         appContent.style.display = 'none';
@@ -28,6 +32,15 @@ loginBtn.addEventListener('click', () => {
 });
 
 logoutBtn.addEventListener('click', () => signOut(auth));
+
+window.toggleSideMenu = function(open) {
+    const menu = document.getElementById('sideMenuOverlay');
+    if (menu) menu.classList.toggle('open', open);
+};
+
+window.handleSideMenuOutsideClick = function(event) {
+    if (event.target.id === 'sideMenuOverlay') toggleSideMenu(false);
+};
 
 // Переключение вкладок
 window.switchTab = function(tabName, clickedButton) {
@@ -82,15 +95,36 @@ if (tabSwipeContent) {
     }, { passive: true });
 }
 
+const migratingCategoryNames = new Set();
+
+function migrateLegacyCategories() {
+    ['plans', 'chores', 'notes'].forEach(section => {
+        onSnapshot(collection(db, `${section}_categories`), snapshot => {
+            snapshot.forEach(categoryDoc => {
+                const name = categoryDoc.data().name?.trim();
+                if (!name || migratingCategoryNames.has(name)) return;
+                migratingCategoryNames.add(name);
+                const exists = categoriesCache.some(category => category.name === name);
+                if (!exists) {
+                    addDoc(collection(db, 'categories'), {
+                        name,
+                        createdAt: serverTimestamp()
+                    }).catch(error => console.error('Ошибка переноса категории:', error));
+                }
+            });
+        }, error => console.error('Ошибка чтения старых категорий:', error));
+    });
+}
+
 function initAppData() {
     const sec = currentSection;
 
-    // 1. Слушаем категории
-    const catQuery = query(collection(db, `${sec}_categories`), orderBy('createdAt', 'asc'));
+    // 1. Слушаем общие категории
+    const catQuery = query(collection(db, 'categories'), orderBy('createdAt', 'asc'));
     onSnapshot(catQuery, (snapshot) => {
-        categoriesCache[sec] = [];
+        categoriesCache = [];
         snapshot.forEach(docSnap => {
-            categoriesCache[sec].push({ id: docSnap.id, ...docSnap.data() });
+            categoriesCache.push({ id: docSnap.id, ...docSnap.data() });
         });
         updateCategorySelects();
         renderCategoryFilter();
@@ -222,7 +256,7 @@ function renderCategoryFilter() {
     if (!filterEl) return;
 
     const sectionCategories = [];
-    categoriesCache[currentSection].forEach(cat => {
+    categoriesCache.forEach(cat => {
         if (!sectionCategories.includes(cat.name)) sectionCategories.push(cat.name);
     });
     observedCategories[currentSection].forEach(cat => {
@@ -267,7 +301,7 @@ function updateCategorySelects() {
 
     selectEl.innerHTML = '<option value="📦 Общее">📦 Общее</option>';
     
-    categoriesCache[currentSection].forEach(cat => {
+    categoriesCache.forEach(cat => {
         const catVal = cat.name;
         const opt = document.createElement('option');
         opt.value = catVal;
@@ -289,15 +323,15 @@ window.handleModalCategoryChange = async function(selectEl) {
         if (!name || !name.trim()) return;
 
         const newCatName = name.trim();
-        await createCategory(currentSection, newCatName);
+        await createCategory(newCatName);
         updateCategorySelects();
         selectEl.value = newCatName;
     }
 };
 
-async function createCategory(section, name) {
+async function createCategory(name) {
     try {
-        await addDoc(collection(db, `${section}_categories`), {
+        await addDoc(collection(db, 'categories'), {
             name: name,
             createdAt: serverTimestamp()
         });

@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, getDoc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, getDoc, getDocs, where, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCqQpi4D-A9JbmoJaWeKrkHM8q_SY9NfH0",
@@ -19,5 +19,5 @@ export const googleProvider = new GoogleAuthProvider();
 // Экспортируем все необходимые методы, включая getDoc
 export { 
     signInWithPopup, signOut, onAuthStateChanged, 
-    collection, addDoc, deleteDoc, doc, updateDoc, getDoc, onSnapshot, serverTimestamp, query, orderBy 
+    collection, addDoc, deleteDoc, doc, updateDoc, getDoc, getDocs, where, onSnapshot, serverTimestamp, query, orderBy
 };

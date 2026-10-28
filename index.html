@@ -20,6 +20,21 @@
             --border-color: #e5e5ea;
             --danger: #ff3b30;
             --success: #34c759;
+            --tab-bg: #e3e3e8;
+            --overlay-bg: rgba(0,0,0,0.35);
+        }
+
+        :root[data-theme="dark"] {
+            --bg-color: #0f1115;
+            --card-bg: #1c1f24;
+            --text-main: #f5f5f7;
+            --text-secondary: #a7a9ae;
+            --accent: #0a84ff;
+            --border-color: #34373d;
+            --danger: #ff453a;
+            --success: #32d74b;
+            --tab-bg: #292c32;
+            --overlay-bg: rgba(0,0,0,0.62);
         }
 
         body {
@@ -62,6 +77,73 @@
 
         h1 { font-size: 22px; font-weight: 700; margin: 0; }
 
+        .brand-button {
+            border: none;
+            background: none;
+            padding: 0;
+            color: var(--text-main);
+            font-size: 22px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .side-menu-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1500;
+            background: var(--overlay-bg);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+        }
+
+        .side-menu-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .side-menu {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: min(280px, 82vw);
+            background: var(--card-bg);
+            box-shadow: 8px 0 24px rgba(0,0,0,0.16);
+            padding: 20px 12px;
+            transform: translateX(-100%);
+            transition: transform 0.28s cubic-bezier(0.22, 0.75, 0.32, 1);
+        }
+
+        .side-menu-overlay.open .side-menu {
+            transform: translateX(0);
+        }
+
+        .side-menu-title {
+            margin: 2px 8px 18px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .side-menu-link {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            border: none;
+            border-radius: 12px;
+            background: transparent;
+            color: var(--text-main);
+            padding: 13px 12px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .side-menu-link:hover {
+            background: var(--bg-color);
+        }
+
         .user-avatar {
             font-size: 13px;
             color: var(--text-secondary);
@@ -74,7 +156,7 @@
         /* Исправление вкладок, чтобы текст не уезжал */
         .tabs-nav {
             display: flex;
-            background: #e3e3e8;
+            background: var(--tab-bg);
             padding: 3px;
             border-radius: 12px;
             margin-bottom: 16px;
@@ -384,7 +466,7 @@
 
     <div id="app-content">
         <header>
-            <h1>Gnizdo</h1>
+            <button class="brand-button" type="button" onclick="toggleSideMenu(true)" aria-label="Открыть меню">Gnizdo</button>
             <div id="userEmail" class="user-avatar">Загрузка...</div>
         </header>
 
@@ -447,6 +529,13 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <div id="sideMenuOverlay" class="side-menu-overlay" onclick="handleSideMenuOutsideClick(event)">
+        <nav class="side-menu" aria-label="Главное меню">
+            <div class="side-menu-title">Меню</div>
+            <a class="side-menu-link" href="settings.html">⚙️ Настройки</a>
+        </nav>
     </div>
 
     <script type="module" src="app.js"></script>
