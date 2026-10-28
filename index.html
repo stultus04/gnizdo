@@ -131,6 +131,42 @@
             }
         }
 
+        .category-filter {
+            display: none;
+            gap: 8px;
+            margin: -8px 0 16px;
+            padding-bottom: 2px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            touch-action: pan-x;
+        }
+
+        .category-filter::-webkit-scrollbar {
+            display: none;
+        }
+
+        .category-filter.visible {
+            display: flex;
+        }
+
+        .category-filter-btn {
+            flex: 0 0 auto;
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            background: var(--card-bg);
+            color: var(--text-secondary);
+            padding: 7px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .category-filter-btn.active {
+            background: var(--text-main);
+            border-color: var(--text-main);
+            color: var(--card-bg);
+        }
+
         #tab-content-area {
             touch-action: pan-y;
         }
@@ -358,6 +394,8 @@
             <button class="tab-btn" onclick="switchTab('notes', this)">Задачи</button>
         </div>
 
+        <div id="categoryFilter" class="category-filter" aria-label="Фильтр по категориям"></div>
+
         <!-- Контент вкладок -->
         <div id="tab-content-area">
             <div class="card">
@@ -393,12 +431,12 @@
                 <input type="date" id="modalDateInput">
                 <select id="modalAssigneeSelect">
     <option value="none">👤 Ответственный: Никто</option>
-    <option value="maxim">👤 Ответственный: Максим</option>
-    <option value="katya">👤 Ответственный: Катя</option>
-    <option value="both">👥 Ответственный: Оба</option>
+    <option value="maxim">🙋‍♂️ Ответственный: Максим</option>
+    <option value="katya">💁‍♀️ Ответственная: Катя</option>
+    <option value="both">👥 Ответственные: Оба</option>
 </select>
                 <select id="modalRecurrenceSelect">
-                    <option value="none">🔄 Без повтора</option>
+                    <option value="none">❌ Без повтора</option>
                     <option value="daily">🔄 Каждый день</option>
                     <option value="weekly">🔄 Каждую неделю</option>
                     <option value="monthly">🔄 Каждый месяц</option>

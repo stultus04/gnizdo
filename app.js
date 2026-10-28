@@ -8,6 +8,8 @@ const userEmailDiv = document.getElementById('userEmail');
 
 let currentSection = 'plans';
 let categoriesCache = { plans: [], chores: [], notes: [] };
+let observedCategories = { plans: [], chores: [], notes: [] };
+let categoryFilterBySection = { plans: 'all', chores: 'all', notes: 'all' };
 
 onAuthStateChanged(auth, (user) => {
     if (user) {
@@ -45,6 +47,7 @@ window.switchTab = function(tabName, clickedButton) {
     }
 
     updateCategorySelects();
+    renderCategoryFilter();
     initAppData();
 };
 
@@ -90,6 +93,7 @@ function initAppData() {
             categoriesCache[sec].push({ id: docSnap.id, ...docSnap.data() });
         });
         updateCategorySelects();
+        renderCategoryFilter();
     }, (err) => console.error(`Ошибка категорий:`, err));
 
     // 2. Слушаем задачи
@@ -100,6 +104,15 @@ function initAppData() {
         const completedCountEl = document.getElementById('completedCount');
         
         if (!activeListEl) return;
+
+        observedCategories[sec] = [];
+        snapshot.forEach(docSnap => {
+            const itemCategory = docSnap.data().category || '📦 Общее';
+            if (!observedCategories[sec].includes(itemCategory)) {
+                observedCategories[sec].push(itemCategory);
+            }
+        });
+        renderCategoryFilter();
         
         activeListEl.innerHTML = '';
         completedListEl.innerHTML = '';
@@ -113,6 +126,9 @@ function initAppData() {
         snapshot.forEach(docSnap => {
             const item = docSnap.data();
             const id = docSnap.id;
+            const itemCategory = item.category || '📦 Общее';
+            const selectedCategory = categoryFilterBySection[sec];
+            if (selectedCategory !== 'all' && itemCategory !== selectedCategory) return;
             
             let dueDateStr = '';
             let isOverdue = false;
@@ -146,7 +162,8 @@ function initAppData() {
                 const li = document.createElement('li');
                 li.className = 'completed-item';
                 li.innerHTML = `
-                    <span>${escapeHtml(item.text)} (${escapeHtml(item.category || 'Общее')})</span>
+                    <input type="checkbox" checked onchange="restoreTask('${sec}', '${id}')" style="width: 22px; height: 22px; cursor: pointer; margin-right: 10px; flex-shrink: 0;">
+                    <span style="flex: 1;">${escapeHtml(item.text)} (${escapeHtml(item.category || 'Общее')})</span>
                     <button class="delete-btn" onclick="deleteTask('${sec}', '${id}')" style="font-size:14px;">✕</button>
                 `;
                 completedListEl.appendChild(li);
@@ -198,6 +215,50 @@ window.handleModalOutsideClick = function(event) {
     if (event.target.id === 'taskModal') {
         closeTaskModal();
     }
+};
+
+function renderCategoryFilter() {
+    const filterEl = document.getElementById('categoryFilter');
+    if (!filterEl) return;
+
+    const sectionCategories = [];
+    categoriesCache[currentSection].forEach(cat => {
+        if (!sectionCategories.includes(cat.name)) sectionCategories.push(cat.name);
+    });
+    observedCategories[currentSection].forEach(cat => {
+        if (!sectionCategories.includes(cat)) sectionCategories.push(cat);
+    });
+
+    if (sectionCategories.length === 0) {
+        filterEl.classList.remove('visible');
+        filterEl.innerHTML = '';
+        return;
+    }
+
+    if (categoryFilterBySection[currentSection] !== 'all' && !sectionCategories.includes(categoryFilterBySection[currentSection])) {
+        categoryFilterBySection[currentSection] = 'all';
+    }
+
+    const categories = ['all', ...sectionCategories];
+    filterEl.innerHTML = categories.map(category => {
+        const isActive = categoryFilterBySection[currentSection] === category;
+        const label = category === 'all' ? 'Все' : category;
+        return `<button type="button" class="category-filter-btn${isActive ? ' active' : ''}" onclick="setCategoryFilter('${escapeHtml(category)}', this)">${escapeHtml(label)}</button>`;
+    }).join('');
+    filterEl.classList.add('visible');
+}
+
+window.setCategoryFilter = function(category, clickedButton) {
+    if (category === "all") {
+        categoryFilterBySection[currentSection] = 'all';
+    } else {
+        categoryFilterBySection[currentSection] = category;
+    }
+
+    document.querySelectorAll('.category-filter-btn').forEach(button => button.classList.remove('active'));
+    if (clickedButton) clickedButton.classList.add('active');
+
+    initAppData();
 };
 
 function updateCategorySelects() {
@@ -321,6 +382,15 @@ window.completeTaskWithRecurrence = async function(section, id) {
         }
     } catch (e) {
         console.error("Ошибка при закрытии и пересоздании задачи:", e);
+    }
+};
+
+window.restoreTask = async function(section, id) {
+    try {
+        await updateDoc(doc(db, section, id), { completed: false });
+    } catch (e) {
+        console.error('Ошибка возврата задачи:', e);
+        alert('Не удалось вернуть задачу в актуальный список');
     }
 };
 
