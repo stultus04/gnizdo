@@ -78,13 +78,23 @@
         h1 { font-size: 22px; font-weight: 700; margin: 0; }
 
         .brand-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
             border: none;
             background: none;
             padding: 0;
             color: var(--text-main);
             font-size: 22px;
+            line-height: 1;
             font-weight: 700;
             cursor: pointer;
+        }
+
+        .brand-logo {
+            width: 30px;
+            height: 30px;
+            object-fit: contain;
         }
 
         .side-menu-overlay {
@@ -466,7 +476,10 @@
 
     <div id="app-content">
         <header>
-            <button class="brand-button" type="button" onclick="toggleSideMenu(true)" aria-label="Открыть меню">Gnizdo</button>
+            <button class="brand-button" type="button" onclick="toggleSideMenu(true)" aria-label="Открыть меню">
+                <img class="brand-logo" src="icon-192.png" alt="">
+                <span>Gnizdo</span>
+            </button>
             <div id="userEmail" class="user-avatar">Загрузка...</div>
         </header>
 
