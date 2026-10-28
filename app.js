@@ -38,6 +38,11 @@ window.toggleSideMenu = function(open) {
     if (menu) menu.classList.toggle('open', open);
 };
 
+const brandButton = document.getElementById('brandButton');
+if (brandButton) {
+    brandButton.addEventListener('click', () => toggleSideMenu(true));
+}
+
 window.handleSideMenuOutsideClick = function(event) {
     if (event.target.id === 'sideMenuOverlay') toggleSideMenu(false);
 };
